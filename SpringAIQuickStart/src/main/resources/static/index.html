@@ -380,23 +380,44 @@
         input.focus();
 
         setBusy(true);
-        const aiMsg = appendMessage("ai", "…");
+        const aiMsg = appendMessage("ai", "");
         aiMsg.metaEl.textContent = "生成中";
 
         try{
-          const url = "/ai/chat?message=" + encodeURIComponent(message);
-          const resp = await fetch(url, { method: "GET" });
-          if (!resp.ok) {
-            throw new Error("HTTP " + resp.status + " " + resp.statusText);
-          }
-          const text = await resp.text();
-          aiMsg.bubble.textContent = text || "(空响应)";
-          aiMsg.metaEl.textContent = nowTime();
+          const url = "/ai/chatStream?message=" + encodeURIComponent(message);
+          const es = new EventSource(url);
+          let last = "";
+
+          es.onmessage = (ev) => {
+            // 后端可能发送“全量文本”，这里做一次去重：只把新增部分追加到气泡里
+            const incoming = ev.data ?? "";
+            if (incoming.startsWith(last)) {
+              aiMsg.bubble.textContent += incoming.slice(last.length);
+            } else if (incoming.length >= last.length && incoming.includes(last)) {
+              const idx = incoming.indexOf(last);
+              aiMsg.bubble.textContent += incoming.slice(idx + last.length);
+            } else if (aiMsg.bubble.textContent === "") {
+              aiMsg.bubble.textContent = incoming;
+            } else {
+              aiMsg.bubble.textContent += incoming;
+            }
+            last = incoming;
+            timeline.scrollTop = timeline.scrollHeight;
+          };
+
+          es.onerror = () => {
+            // 浏览器端无法准确区分“正常结束/异常断开”，这里当作结束处理并关闭连接
+            es.close();
+            aiMsg.metaEl.textContent = nowTime();
+            setBusy(false);
+          };
+
+          // 发送后立即返回，让 SSE 自己推进；busy 状态由 onerror 收尾
+          return;
         }catch(e){
           aiMsg.bubble.textContent = "请求失败，请检查后端是否启动以及依赖是否已解析。";
           aiMsg.metaEl.textContent = "错误";
           errEl.textContent = String(e?.message || e);
-        }finally{
           setBusy(false);
         }
       }
