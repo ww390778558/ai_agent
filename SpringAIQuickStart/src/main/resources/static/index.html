@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Chat</title>
+    <style>
+      :root{
+        --bg0:#0b1220;
+        --bg1:#0f1a2f;
+        --panel: rgba(255,255,255,.08);
+        --panel2: rgba(255,255,255,.06);
+        --stroke: rgba(255,255,255,.12);
+        --text:#e9eefb;
+        --muted: rgba(233,238,251,.72);
+        --brand:#7c5cff;
+        --brand2:#22c55e;
+        --danger:#ef4444;
+        --shadow: 0 18px 60px rgba(0,0,0,.45);
+        --radius: 18px;
+      }
+      *{box-sizing:border-box}
+      html,body{height:100%}
+      body{
+        margin:0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+        color:var(--text);
+        background:
+          radial-gradient(1200px 600px at 15% 0%, rgba(124,92,255,.28), transparent 60%),
+          radial-gradient(900px 500px at 85% 10%, rgba(34,197,94,.20), transparent 55%),
+          radial-gradient(700px 500px at 60% 100%, rgba(56,189,248,.16), transparent 60%),
+          linear-gradient(180deg, var(--bg0), var(--bg1));
+        overflow:hidden;
+      }
+
+      .wrap{
+        height:100%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:24px;
+      }
+
+      .app{
+        width:min(980px, 100%);
+        height:min(760px, 100%);
+        border:1px solid var(--stroke);
+        border-radius: calc(var(--radius) + 8px);
+        background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(14px);
+        display:flex;
+        flex-direction:column;
+        overflow:hidden;
+      }
+
+      header{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        padding:16px 18px;
+        border-bottom:1px solid var(--stroke);
+        background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      }
+      .brand{
+        display:flex;
+        gap:12px;
+        align-items:center;
+        min-width:0;
+      }
+      .logo{
+        width:36px;
+        height:36px;
+        border-radius:12px;
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.25), transparent 55%),
+          linear-gradient(135deg, rgba(124,92,255,1), rgba(56,189,248,1));
+        box-shadow: 0 8px 30px rgba(124,92,255,.35);
+        flex: 0 0 auto;
+      }
+      .brand h1{
+        margin:0;
+        font-size:14px;
+        letter-spacing:.2px;
+        line-height:1.1;
+      }
+      .brand p{
+        margin:2px 0 0 0;
+        font-size:12px;
+        color:var(--muted);
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        max-width: 70ch;
+      }
+      .actions{
+        display:flex;
+        gap:10px;
+        align-items:center;
+      }
+      .btn{
+        appearance:none;
+        border:1px solid var(--stroke);
+        background: rgba(255,255,255,.06);
+        color: var(--text);
+        padding:10px 12px;
+        border-radius: 12px;
+        font-size:12px;
+        cursor:pointer;
+        transition: transform .08s ease, background .12s ease, border-color .12s ease;
+      }
+      .btn:hover{ background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.18); }
+      .btn:active{ transform: translateY(1px); }
+
+      main{
+        flex:1;
+        display:flex;
+        min-height:0;
+      }
+      .chat{
+        flex:1;
+        display:flex;
+        flex-direction:column;
+        min-height:0;
+      }
+
+      .timeline{
+        flex:1;
+        min-height:0;
+        overflow:auto;
+        padding:18px;
+        scroll-behavior:smooth;
+      }
+
+      .hint{
+        border:1px dashed rgba(255,255,255,.18);
+        border-radius: 16px;
+        padding:14px 14px;
+        color: var(--muted);
+        background: rgba(0,0,0,.10);
+      }
+      .hint strong{ color: var(--text); font-weight:600; }
+      .hint code{
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+        background: rgba(255,255,255,.08);
+        padding:2px 6px;
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,.10);
+      }
+
+      .msg{
+        display:flex;
+        gap:10px;
+        align-items:flex-end;
+        margin-top: 14px;
+      }
+      .msg:first-of-type{ margin-top:0; }
+      .avatar{
+        width:34px;
+        height:34px;
+        border-radius: 12px;
+        flex: 0 0 auto;
+        border: 1px solid rgba(255,255,255,.12);
+        background: rgba(255,255,255,.06);
+        display:grid;
+        place-items:center;
+        color: rgba(255,255,255,.9);
+        font-weight: 700;
+        font-size: 12px;
+      }
+      .bubble{
+        max-width:min(72ch, 100%);
+        border-radius: 18px;
+        padding:12px 12px;
+        border: 1px solid rgba(255,255,255,.12);
+        background: rgba(255,255,255,.06);
+        line-height: 1.55;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .meta{
+        margin-top: 6px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .me{
+        flex-direction: row-reverse;
+      }
+      .me .avatar{
+        background: rgba(34,197,94,.14);
+        border-color: rgba(34,197,94,.30);
+      }
+      .me .bubble{
+        background: linear-gradient(135deg, rgba(124,92,255,.22), rgba(56,189,248,.16));
+        border-color: rgba(124,92,255,.35);
+      }
+      .ai .avatar{
+        background: rgba(124,92,255,.14);
+        border-color: rgba(124,92,255,.30);
+      }
+
+      .composer{
+        border-top:1px solid var(--stroke);
+        padding:14px;
+        background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
+      }
+      .row{
+        display:flex;
+        gap:10px;
+        align-items:flex-end;
+      }
+      textarea{
+        flex:1;
+        resize:none;
+        min-height: 44px;
+        max-height: 160px;
+        padding:12px 12px;
+        border-radius: 14px;
+        border:1px solid rgba(255,255,255,.14);
+        background: rgba(0,0,0,.16);
+        color: var(--text);
+        outline: none;
+        line-height: 1.5;
+        box-shadow: inset 0 0 0 1px rgba(0,0,0,.18);
+      }
+      textarea::placeholder{ color: rgba(233,238,251,.50); }
+      textarea:focus{
+        border-color: rgba(124,92,255,.45);
+        box-shadow:
+          0 0 0 4px rgba(124,92,255,.16),
+          inset 0 0 0 1px rgba(0,0,0,.18);
+      }
+      .send{
+        flex: 0 0 auto;
+        border:none;
+        padding:12px 14px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(124,92,255,1), rgba(56,189,248,1));
+        color:white;
+        font-weight: 700;
+        cursor:pointer;
+        box-shadow: 0 10px 26px rgba(124,92,255,.30);
+        transition: transform .08s ease, filter .12s ease, opacity .12s ease;
+      }
+      .send:hover{ filter: brightness(1.04); }
+      .send:active{ transform: translateY(1px); }
+      .send[disabled]{
+        opacity:.55;
+        cursor:not-allowed;
+        box-shadow:none;
+      }
+      .foot{
+        margin-top: 10px;
+        display:flex;
+        justify-content:space-between;
+        gap:10px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .err{
+        color: rgba(239,68,68,.95);
+      }
+      .kbd{
+        border:1px solid rgba(255,255,255,.16);
+        background: rgba(255,255,255,.06);
+        padding: 1px 6px;
+        border-radius: 8px;
+        font-size: 11px;
+        color: rgba(233,238,251,.85);
+      }
+
+      @media (max-width: 520px){
+        .brand p{ display:none; }
+        .timeline{ padding: 14px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="app" role="application" aria-label="AI Chat">
+        <header>
+          <div class="brand">
+            <div class="logo" aria-hidden="true"></div>
+            <div style="min-width:0">
+              <h1>Spring AI Chat</h1>
+              <p>调用后端接口：<code>GET /ai/chat?message=...</code></p>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn" id="btnHello" type="button">来个示例</button>
+            <button class="btn" id="btnClear" type="button">清空</button>
+          </div>
+        </header>
+
+        <main>
+          <section class="chat" aria-label="Chat">
+            <div class="timeline" id="timeline" aria-live="polite">
+              <div class="hint">
+                <strong>提示：</strong>输入内容后按 <span class="kbd">Enter</span> 发送，<span class="kbd">Shift</span> + <span class="kbd">Enter</span> 换行。<br/>
+                如果接口还没通，优先确认后端能访问：<code>/ai/chat</code>。
+              </div>
+            </div>
+
+            <div class="composer">
+              <div class="row">
+                <textarea id="input" placeholder="输入你想问的内容，比如：用一句话介绍你自己…"></textarea>
+                <button class="send" id="send" type="button">发送</button>
+              </div>
+              <div class="foot">
+                <div id="status">就绪</div>
+                <div id="err" class="err" aria-live="assertive"></div>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const timeline = $("timeline");
+      const input = $("input");
+      const sendBtn = $("send");
+      const statusEl = $("status");
+      const errEl = $("err");
+      const btnClear = $("btnClear");
+      const btnHello = $("btnHello");
+
+      function nowTime() {
+        const d = new Date();
+        return d.toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
+      }
+
+      function escapeText(s){
+        // Use textContent when rendering; keep this for any future needs.
+        return (s ?? "").toString();
+      }
+
+      function appendMessage(role, text, meta) {
+        const wrap = document.createElement("div");
+        wrap.className = "msg " + (role === "me" ? "me" : "ai");
+
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.textContent = role === "me" ? "我" : "AI";
+
+        const body = document.createElement("div");
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = escapeText(text);
+
+        const metaEl = document.createElement("div");
+        metaEl.className = "meta";
+        metaEl.textContent = meta || nowTime();
+
+        body.appendChild(bubble);
+        body.appendChild(metaEl);
+
+        wrap.appendChild(avatar);
+        wrap.appendChild(body);
+        timeline.appendChild(wrap);
+        timeline.scrollTop = timeline.scrollHeight;
+        return { wrap, bubble, metaEl };
+      }
+
+      function setBusy(isBusy){
+        sendBtn.disabled = isBusy;
+        input.disabled = isBusy;
+        statusEl.textContent = isBusy ? "正在生成…" : "就绪";
+      }
+
+      async function sendMessage() {
+        errEl.textContent = "";
+        const message = input.value.trim();
+        if (!message) return;
+
+        appendMessage("me", message);
+        input.value = "";
+        input.focus();
+
+        setBusy(true);
+        const aiMsg = appendMessage("ai", "…");
+        aiMsg.metaEl.textContent = "生成中";
+
+        try{
+          const url = "/ai/chat?message=" + encodeURIComponent(message);
+          const resp = await fetch(url, { method: "GET" });
+          if (!resp.ok) {
+            throw new Error("HTTP " + resp.status + " " + resp.statusText);
+          }
+          const text = await resp.text();
+          aiMsg.bubble.textContent = text || "(空响应)";
+          aiMsg.metaEl.textContent = nowTime();
+        }catch(e){
+          aiMsg.bubble.textContent = "请求失败，请检查后端是否启动以及依赖是否已解析。";
+          aiMsg.metaEl.textContent = "错误";
+          errEl.textContent = String(e?.message || e);
+        }finally{
+          setBusy(false);
+        }
+      }
+
+      sendBtn.addEventListener("click", sendMessage);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+      btnClear.addEventListener("click", () => {
+        // Keep the hint (first child) and remove others
+        while (timeline.children.length > 1) timeline.removeChild(timeline.lastChild);
+        errEl.textContent = "";
+        statusEl.textContent = "就绪";
+        input.focus();
+      });
+      btnHello.addEventListener("click", () => {
+        input.value = "你好！你是谁？能做什么？";
+        input.focus();
+      });
+    </script>
+  </body>
+</html>
